@@ -1,807 +1,213 @@
-* {
-    font-family: 'Georgia', serif;
+const host = 'http://' + window.location.host;
+let targetId;
+
+$(document).ready(function () {
+
+    showProduct();
+
+    // id 가 query 인 녀석 위에서 엔터를 누르면 execSearch() 함수를 실행하라는 뜻입니다.
+    $('#query').on('keypress', function (e) {
+        if (e.key == 'Enter') {
+            execSearch();
+        }
+    });
+    $('#close').on('click', function () {
+        $('#container').removeClass('active');
+    })
+    $('#close2').on('click', function () {
+        $('#container2').removeClass('active');
+    })
+    $('.nav div.nav-see').on('click', function () {
+        $('div.nav-see').addClass('active');
+        $('div.nav-search').removeClass('active');
+
+        $('#see-area').show();
+        $('#search-area').hide();
+    })
+    $('.nav div.nav-search').on('click', function () {
+        $('div.nav-see').removeClass('active');
+        $('div.nav-search').addClass('active');
+
+        $('#see-area').hide();
+        $('#search-area').show();
+    })
+
+    $('#see-area').show();
+    $('#search-area').hide();
+})
+
+function numberWithCommas(x) {
+    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-body {
-    margin: 0px;
+function execSearch() {
+    /**
+     * 검색어 input id: query
+     * 검색결과 목록: #search-result-box
+     * 검색결과 HTML 만드는 함수: addHTML
+     */
+        // 1. 검색창의 입력값을 가져온다.
+    let query = $('#query').val();
+
+    // 2. 검색창 입력값을 검사하고, 입력하지 않았을 경우 focus.
+    if (query == '') {
+        alert('검색어를 입력해주세요');
+        $('#query').focus();
+        return;
+    }
+    // 3. GET /api/search?query=${query} 요청
+    $.ajax({
+        type: 'GET',
+        url: `/api/search?query=${query}`,
+        success: function (response) {
+            $('#search-result-box').empty();
+            // 4. for 문마다 itemDto를 꺼내서 HTML 만들고 검색결과 목록에 붙이기!
+            for (let i = 0; i < response.length; i++) {
+                let itemDto = response[i];
+                let tempHtml = addHTML(itemDto);
+                $('#search-result-box').append(tempHtml);
+            }
+        },
+        error(error, status, request) {
+            console.error(error);
+        }
+    })
+
 }
 
-
-#search-result-box {
-    margin-top: 15px;
+function addHTML(itemDto) {
+    /**
+     * class="search-itemDto" 인 녀석에서
+     * image, title, lprice, addProduct 활용하기
+     * 참고) onclick='addProduct(${JSON.stringify(itemDto)})'
+     */
+    return `<div class="search-itemDto">
+        <div class="search-itemDto-left">
+            <img src="${itemDto.image}" alt="">
+        </div>
+        <div class="search-itemDto-center">
+            <div>${itemDto.title}</div>
+            <div class="price">
+                ${numberWithCommas(itemDto.lprice)}
+                <span class="unit">원</span>
+            </div>
+        </div>
+        <div class="search-itemDto-right">
+            <img src="../images/icon-save.png" alt="" onclick='addProduct(${JSON.stringify(itemDto)})'>
+        </div>
+    </div>`
 }
 
-.search-itemDto {
-    width: 530px;
-    display: flex;
-    flex-direction: row;
-    align-content: center;
-    justify-content: space-around;
+function addProduct(itemDto) {
+    /**
+     * modal 뜨게 하는 법: $('#container').addClass('active');
+     * data를 ajax로 전달할 때는 두 가지가 매우 중요
+     * 1. contentType: "application/json",
+     * 2. data: JSON.stringify(itemDto),
+     */
+
+    // 1. POST /api/products 에 관심 상품 생성 요청
+    $.ajax({
+        type: 'POST',
+        url: '/api/products',
+        contentType: 'application/json',
+        data: JSON.stringify(itemDto),
+        success: function (response) {
+            // 2. 응답 함수에서 modal을 뜨게 하고, targetId 를 reponse.id 로 설정
+            $('#container').addClass('active');
+            targetId = response.id;
+        },
+        error(error, status, request) {
+            console.log(error);
+        }
+    });
+}
+function showProduct(isAdmin = false) {
+    /**
+     * 관심상품 목록: #product-container
+     * 검색결과 목록: #search-result-box
+     * 관심상품 HTML 만드는 함수: addProductItem
+     */
+
+    $.ajax({
+        type: 'GET',
+        url: '/api/products',
+        contentType: 'application/json',
+        success: function (response) {
+            $('#product-container').empty();
+            for (let i = 0; i < response.length; i++) {
+                let product = response[i];
+                let tempHtml = addProductItem(product);
+                $('#product-container').append(tempHtml);
+            }
+        },
+        error(error, status, request) {
+						console.log(error);
+        }
+    });
+
 }
 
-.search-itemDto-left img {
-    width: 159px;
-    height: 159px;
+function addProductItem(product) {
+    console.log(product)
+    return `<div class="product-card">
+                <div onclick="window.location.href='${product.link}'">
+                    <div class="card-header">
+                        <img src="${product.image}"
+                             alt="">
+                    </div>
+                    <div class="card-body">
+                        <div class="title">
+                            ${product.title}
+                        </div>
+                        <div class="lprice">
+                            <span>${numberWithCommas(product.lprice)}</span>원
+                        </div>
+                        <div class="isgood ${product.lprice > product.myprice ? 'none' : ''}">
+                            최저가
+                        </div>
+                    </div>
+                </div>
+            </div>`;
 }
 
-.search-itemDto-center {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-evenly;
-}
-
-.search-itemDto-center div {
-    width: 280px;
-    height: 23px;
-    font-size: 18px;
-    font-weight: normal;
-    font-stretch: normal;
-    font-style: normal;
-    line-height: 1.3;
-    letter-spacing: -0.9px;
-    text-align: left;
-    color: #343a40;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-
-.search-itemDto-center div.price {
-    height: 27px;
-    font-size: 27px;
-    font-weight: 600;
-    font-stretch: normal;
-    font-style: normal;
-    line-height: 1;
-    letter-spacing: -0.54px;
-    text-align: left;
-    color: #E8344E;
-}
-
-.search-itemDto-center span.unit {
-    width: 17px;
-    height: 18px;
-    font-size: 18px;
-    font-weight: 500;
-    font-stretch: normal;
-    font-style: normal;
-    line-height: 1;
-    letter-spacing: -0.9px;
-    text-align: center;
-    color: #000000;
-}
-
-.search-itemDto-right {
-    display: inline-block;
-    height: 100%;
-    vertical-align: middle
-}
-
-.search-itemDto-right img {
-    height: 25px;
-    width: 25px;
-    vertical-align: middle;
-    margin-top: 60px;
-    cursor: pointer;
-}
-
-input#query {
-    padding: 15px;
-    width: 526px;
-    border-radius: 2px;
-    background-color: #e9ecef;
-    border: none;
-
-    background-image: url('../images/icon-search.png');
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    background-size: 20px 20px;
-}
-
-input#query::placeholder {
-    padding: 15px;
-}
-
-button {
-    color: white;
-    border-radius: 4px;
-    border-radius: none;
-}
-
-.popup-container {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    align-items: center;
-    justify-content: center;
-}
-
-.popup-container.active {
-    display: flex;
-}
-
-.popup {
-    padding: 20px;
-    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
-    position: relative;
-    width: 370px;
-    height: 209px;
-    border-radius: 11px;
-    background-color: #ffffff;
-}
-
-.popup h1 {
-    margin: 0px;
-    font-size: 22px;
-    font-weight: 500;
-    font-stretch: normal;
-    font-style: normal;
-    line-height: 1;
-    letter-spacing: -1.1px;
-    color: #000000;
-}
-
-.popup input {
-    width: 320px;
-    height: 22px;
-    border-radius: 2px;
-    border: solid 1.1px #dee2e6;
-    margin-right: 9px;
-    margin-bottom: 10px;
-    padding-left: 10px;
-}
-
-.add-folder-btn {
-    width: 330px;
-}
-
-.popup button.close {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    color: #adb5bd;
-    background-color: #fff;
-    font-size: 19px;
-    border: none;
-}
-
-.popup button.cta {
-    width: 369.1px;
-    height: 43.9px;
-    border-radius: 2px;
-    background-color: #15aabf;
-    border: none;
-}
-
-.popup button.cta2 {
-    width: 352.1px;
-    height: 43.9px;
-    border-radius: 2px;
-    background-color: #15aabf;
-    border: none;
-}
-
-#search-area, #see-area {
-    width: 530px;
-    margin: auto;
-}
-
-.nav {
-    width: 530px;
-    margin: 30px auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-around;
-}
-
-.nav div {
-    cursor: pointer;
-}
-
-.nav div.active {
-    font-weight: 700;
-}
-
-.header {
-    height: 255px;
-    box-sizing: border-box;
-    background-color: #15aabf;
-    color: white;
-    text-align: center;
-    padding-top: 80px;
-    /*padding: 50px;*/
-    font-size: 45px;
-    font-weight: bold;
-}
-
-#header-title-login-user {
-    font-size: 36px;
-    letter-spacing: -1.08px;
-}
-
-#header-title-select-shop {
-    margin-top: 20px;
-    font-size: 45px;
-    letter-spacing: 1.1px;
-}
-
-#product-container {
-    grid-template-columns: 100px 50px 100px;
-    grid-template-rows: 80px auto 80px;
-    column-gap: 10px;
-    row-gap: 15px;
-}
-
-.product-card {
-    width: 300px;
-    margin: auto;
-    cursor: pointer;
-}
-
-.product-card .card-header {
-    width: 300px;
-}
-
-.product-card .card-header img {
-    width: 300px;
-}
-
-.product-card .card-body {
-    margin-top: 15px;
-}
-
-.product-card .card-body .title {
-    font-size: 11px;
-    font-weight: normal;
-    font-stretch: normal;
-    font-style: normal;
-    line-height: 1;
-    letter-spacing: -0.75px;
-    text-align: left;
-    color: #343a40;
-    margin-bottom: 10px;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-
-.product-card .card-body .lprice {
-    font-size: 15.8px;
-    font-weight: normal;
-    font-stretch: normal;
-    font-style: normal;
-    line-height: 1;
-    letter-spacing: -0.79px;
-    color: #000000;
-    margin-bottom: 10px;
-}
-
-.product-card .card-body .lprice span {
-    font-size: 13.4px;
-    font-weight: 600;
-    font-stretch: normal;
-    font-style: normal;
-    line-height: 1;
-    letter-spacing: -0.43px;
-    text-align: left;
-    color: #E8344E;
-}
-
-.product-card .card-body .isgood {
-    margin-top: 10px;
-    padding: 10px 20px;
-    color: white;
-    border-radius: 2.6px;
-    background-color: #ff8787;
-    width: 48px;
-}
-
-.pagination {
-    font-size: 14px;
-    margin-top: 12px;
-    margin-left: auto;
-    margin-right: auto;
-    width: 65%;
-}
-
-.folder-active {
-    background-color: crimson !important;;
-}
-
-.none {
-    display: none;
-}
-
-.folder-bar {
-    width: 100%;
-    overflow: hidden;
-}
-
-.folder-black, .folder-black:hover {
-    color: #fff!important;
-    background-color: #000!important;
-}
-
-.folder-bar .folder-button {
-    white-space: normal;
-}
-.folder-bar .folder-bar-item {
-    font-size: 17px;
-    padding: 8px 16px;
-    float: left;
-    width: auto;
-    border: none;
-    display: block;
-    outline: 0;
-}
-
-.folder-btn, .folder-button {
-    border: none;
-    display: inline-block;
-    padding: 8px 16px;
-    vertical-align: middle;
-    overflow: hidden;
-    text-decoration: none;
-    color: inherit;
-    background-color: inherit;
-    text-align: center;
-    cursor: pointer;
-    white-space: nowrap;
-}
-
-#login-form {
-    width: 538px;
-    height: 710px;
-    margin: 70px auto 141px auto;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
-    /*gap: 96px;*/
-    padding: 56px 0 0;
-    border-radius: 10px;
-    box-shadow: 0 4px 25px 0 rgba(0, 0, 0, 0.15);
-    background-color: #ffffff;
-}
-
-#login-title {
-    width: 303px;
-    height: 32px;
-    /*margin: 56px auto auto auto;*/
-    flex-grow: 0;
-    font-family: SpoqaHanSansNeo;
-    font-size: 32px;
-    font-weight: bold;
-    font-stretch: normal;
-    font-style: normal;
-    line-height: 1;
-    letter-spacing: -0.96px;
-    text-align: left;
-    color: #212529;
-}
-
-#login-kakao-btn {
-    border-width: 0;
-    margin: 96px 0 8px;
-    width: 393px;
-    height: 62px;
-    flex-grow: 0;
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    /*margin: 0 0 8px;*/
-    padding: 11px 12px;
-    border-radius: 5px;
-    background-color: #ffd43b;
-
-    font-family: SpoqaHanSansNeo;
-    font-size: 20px;
-    font-weight: bold;
-    font-stretch: normal;
-    font-style: normal;
-    color: #414141;
-}
-
-#login-id-btn {
-    width: 393px;
-    height: 62px;
-    flex-grow: 0;
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    /*margin: 8px 0 0;*/
-    padding: 11px 12px;
-    border-radius: 5px;
-    border: solid 1px #212529;
-    background-color: #ffffff;
-
-    font-family: SpoqaHanSansNeo;
-    font-size: 20px;
-    font-weight: bold;
-    font-stretch: normal;
-    font-style: normal;
-    color: #414141;
-}
-
-.login-input-box {
-    border-width: 0;
-
-    width: 370px !important;
-    height: 52px;
-    margin: 14px 0 0;
-    border-radius: 5px;
-    background-color: #e9ecef;
-}
-
-.login-id-label {
-    /*width: 44.1px;*/
-    /*height: 16px;*/
-    width: 382px;
-    padding-left: 11px;
-    margin-top: 40px;
-    /*margin: 0 337.9px 14px 11px;*/
-    font-family: NotoSansCJKKR;
-    font-size: 16px;
-    font-weight: normal;
-    font-stretch: normal;
-    font-style: normal;
-    line-height: 1;
-    letter-spacing: -0.8px;
-    text-align: left;
-    color: #212529;
-}
-
-#login-id-submit {
-    border-width: 0;
-    width: 393px;
-    height: 62px;
-    flex-grow: 0;
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    margin: 40px 0 0;
-    padding: 11px 12px;
-    border-radius: 5px;
-    background-color: #15aabf;
-
-    font-family: SpoqaHanSansNeo;
-    font-size: 20px;
-    font-weight: bold;
-    font-stretch: normal;
-    font-style: normal;
-    line-height: 1;
-    letter-spacing: normal;
-    text-align: center;
-    color: #ffffff;
-}
-
-#sign-text {
-    position:absolute;
-    top:48px;
-    right:110px;
-    font-size: 18px;
-    font-family: SpoqaHanSansNeo;
-    font-size: 18px;
-    font-weight: 500;
-    font-stretch: normal;
-    font-style: normal;
-    line-height: 1;
-    letter-spacing: 0.36px;
-    text-align: center;
-    color: #ffffff;
-}
-
-#login-text {
-    position:absolute;
-    top:48px;
-    right:50px;
-    font-size: 18px;
-    font-family: SpoqaHanSansNeo;
-    font-size: 18px;
-    font-weight: 500;
-    font-stretch: normal;
-    font-style: normal;
-    line-height: 1;
-    letter-spacing: 0.36px;
-    text-align: center;
-    color: #ffffff;
-}
-
-@media ( max-width: 768px ) {
-    body {
-        margin: 0px;
+function setMyprice() {
+    /**
+     * 1. id가 myprice 인 input 태그에서 값을 가져온다.
+     * 2. 만약 값을 입력하지 않았으면 alert를 띄우고 중단한다.
+     * 3. PUT /api/product/${targetId} 에 data를 전달한다.
+     *    주의) contentType: "application/json",
+     *         data: JSON.stringify({myprice: myprice}),
+     *         빠뜨리지 말 것!
+     * 4. 모달을 종료한다. $('#container').removeClass('active');
+     * 5, 성공적으로 등록되었음을 알리는 alert를 띄운다.
+     * 6. 창을 새로고침한다. window.location.reload();
+     */
+        // 1. id가 myprice 인 input 태그에서 값을 가져온다.
+    let myprice = $('#myprice').val();
+    // 2. 만약 값을 입력하지 않았으면 alert를 띄우고 중단한다.
+    if (myprice == '') {
+        alert('올바른 가격을 입력해주세요');
+        return;
     }
 
-    #search-result-box {
-        margin-top: 15px;
-    }
+    // 3. PUT /api/product/${targetId} 에 data를 전달한다.
+    $.ajax({
+        type: 'PUT',
+        url: `/api/products/${targetId}`,
+        contentType: 'application/json',
+        data: JSON.stringify({myprice: myprice}),
+        success: function (response) {
 
-    .search-itemDto {
-        width: 330px;
-        display: flex;
-        flex-direction: row;
-        align-content: center;
-        justify-content: space-around;
-    }
-
-    .search-itemDto-left img {
-        width: 80px;
-        height: 80px;
-    }
-
-    .search-itemDto-center {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: space-evenly;
-    }
-
-    .search-itemDto-center div {
-        width: 190px;
-        height: 23px;
-        font-size: 13px;
-        font-weight: normal;
-        font-stretch: normal;
-        font-style: normal;
-        line-height: 1.3;
-        letter-spacing: -0.9px;
-        text-align: left;
-        color: #343a40;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-    }
-
-    .search-itemDto-center div.price {
-        height: 27px;
-        font-size: 17px;
-        font-weight: 600;
-        font-stretch: normal;
-        font-style: normal;
-        line-height: 1;
-        letter-spacing: -0.54px;
-        text-align: left;
-        color: #E8344E;
-    }
-
-    .search-itemDto-center span.unit {
-        width: 17px;
-        height: 18px;
-        font-size: 14px;
-        font-weight: 500;
-        font-stretch: normal;
-        font-style: normal;
-        line-height: 1;
-        letter-spacing: -0.9px;
-        text-align: center;
-        color: #000000;
-    }
-
-    .search-itemDto-right {
-        display: inline-block;
-        height: 100%;
-        vertical-align: middle
-    }
-
-    .search-itemDto-right img {
-        height: 14px;
-        width: 14px;
-        vertical-align: middle;
-        margin-top: 26px;
-        cursor: pointer;
-        padding-right: 20px;
-    }
-
-    input#query {
-        padding: 15px;
-        width: 290px;
-        border-radius: 2px;
-        background-color: #e9ecef;
-        border: none;
-
-        background-image: url('../images/icon-search.png');
-        background-repeat: no-repeat;
-        background-position: right 10px center;
-        background-size: 20px 20px;
-    }
-
-    input#query::placeholder {
-        padding: 15px;
-    }
-
-    button {
-        color: white;
-        border-radius: 4px;
-        border-radius: none;
-    }
-
-    .popup-container {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        right: 0;
-        background-color: rgba(0, 0, 0, 0.5);
-        align-items: center;
-        justify-content: center;
-    }
-
-    .popup-container.active {
-        display: flex;
-    }
-
-    .popup {
-        position: absolute;
-        bottom: 0px;
-        width: 333px;
-        border-radius: 11px 11px 0px 0px;
-    }
-
-    .popup input {
-        width: 278px !important;
-        height: 39px;
-        border-radius: 2px;
-        border: solid 1.1px #dee2e6;
-        margin-right: 9px;
-        margin-bottom: 10px;
-        padding-left: 10px;
-    }
-
-    .popup p {
-        font-size: 14px;
-    }
-
-    .popup button.close {
-        position: absolute;
-        top: 15px;
-        right: 15px;
-        color: #adb5bd;
-        background-color: #fff;
-        font-size: 19px;
-        border: none;
-    }
-
-    .popup button.cta {
-        width: 319px;
-        height: 43.9px;
-        border-radius: 2px;
-        background-color: #15aabf;
-        border: none;
-    }
-
-    .popup button.cta2 {
-        width: 302.1px;
-        height: 43.9px;
-        border-radius: 2px;
-        background-color: #15aabf;
-        border: none;
-    }
-
-    #search-area, #see-area {
-        width: 330px;
-        margin: auto;
-    }
-
-    .nav {
-        width: 330px;
-        margin: 30px auto;
-        display: flex;
-        align-items: center;
-        justify-content: space-around;
-    }
-
-    .nav div {
-        cursor: pointer;
-    }
-
-    .nav div.active {
-        font-weight: 700;
-    }
-
-    .header {
-        height: 255px;
-        box-sizing: border-box;
-        background-color: #15aabf;
-        color: white;
-        text-align: center;
-        padding-top: 80px;
-        /*padding: 50px;*/
-        font-size: 45px;
-        font-weight: bold;
-    }
-
-    .none {
-        display: none;
-    }
-
-    input#kakao-login {
-        padding: 15px;
-        width: 526px;
-        border-radius: 2px;
-        background-color: #e9ecef;
-        border: none;
-
-        background-repeat: no-repeat;
-        background-position: right 10px center;
-        background-size: 20px 20px;
-    }
-}
-
-.autocomplete {
-    /*the container must be positioned relative:*/
-    position: relative;
-    display: inline-block;
-}
-
-input {
-    border: 1px solid transparent;
-    background-color: #f1f1f1;
-    padding: 10px;
-    font-size: 16px;
-}
-
-input[type=text] {
-    background-color: #f1f1f1;
-    /*width: 100%;*/
-}
-
-input[type=password] {
-    background-color: #f1f1f1;
-    /*width: 100%;*/
-}
-input[type=submit] {
-    background-color: DodgerBlue;
-    color: #fff;
-}
-.autocomplete-items {
-    position: absolute;
-    border: 1px solid #d4d4d4;
-    border-bottom: none;
-    border-top: none;
-    z-index: 99;
-    /*position the autocomplete items to be the same width as the container:*/
-    top: 100%;
-    left: 0;
-    right: 0;
-}
-.autocomplete-items div {
-    padding: 10px;
-    cursor: pointer;
-    background-color: #fff;
-    border-bottom: 1px solid #d4d4d4;
-}
-.autocomplete-items div:hover {
-    /*when hovering an item:*/
-    background-color: #e9e9e9;
-}
-.autocomplete-active {
-    /*when navigating through the items using the arrow keys:*/
-    background-color: DodgerBlue !important;
-    color: #ffffff;
-}
-
-.alert-danger {
-    color: #721c24;
-    background-color: #f8d7da;
-    border-color: #f5c6cb;
-}
-
-.alert {
-    width: 300px;
-    margin-top: 22px;
-    padding: 1.75rem 1.25rem;
-    border: 1px solid transparent;
-    border-radius: .25rem;
+            // 4. 모달을 종료한다. $('#container').removeClass('active');
+            $('#container').removeClass('active');
+            // 5. 성공적으로 등록되었음을 알리는 alert를 띄운다.
+            alert('성공적으로 등록되었습니다.');
+            // 6. 창을 새로고침한다. window.location.reload();
+            window.location.reload();
+        },
+        error(error, status, request) {
+            console.error(error);
+        }
+    })
 }
