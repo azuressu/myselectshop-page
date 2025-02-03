@@ -9,6 +9,7 @@ import com.myselectshop.repository.FolderRepository;
 import com.myselectshop.repository.ProductFolderRepository;
 import com.myselectshop.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductService {
@@ -53,7 +55,7 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProductResponseDto> getProducts(User user, int page, int size, String sortBy, boolean isAsc) {
+    public Page<ProductResponseDto> getProducts(User user, int page, int size, String sortBy, boolean isAsc) {
         Sort.Direction direction = isAsc ? Sort.Direction.ASC : Sort.Direction.DESC;
         Sort sort = Sort.by(direction, sortBy);
 
@@ -69,7 +71,7 @@ public class ProductService {
             productList = productRepository.findAll(pageable);
         }
 
-        return productList.map(ProductResponseDto::new).toList();
+        return productList.map(ProductResponseDto::new);
     }
 
     @Transactional
@@ -100,5 +102,22 @@ public class ProductService {
         }
 
         productFolderRepository.save(new ProductFolder(product, folder));
+    }
+
+    public Page<ProductResponseDto> getProductsInFolder(Long folderId, int page, int size, String sortBy, boolean isAsc, User user) {
+        log.info("folderId: "+folderId);
+        log.info("page: "+page);
+        log.info("size: "+size);
+        log.info("sortBy: "+sortBy);
+        log.info("isAsc: "+isAsc);
+        log.info("user: "+user.getUsername());
+
+        Sort.Direction direction = isAsc ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Sort sort = Sort.by(direction, sortBy);
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<Product> products = productRepository.findAllByUserAndProductFolderList_FolderId(user, folderId, pageable);
+        return products.map(ProductResponseDto::new);
     }
 }

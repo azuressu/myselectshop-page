@@ -4,14 +4,14 @@ import com.myselectshop.dto.ProductMypriceRequestDto;
 import com.myselectshop.dto.ProductRequestDto;
 import com.myselectshop.dto.ProductResponseDto;
 import com.myselectshop.security.UserDetailsImpl;
-import com.myselectshop.security.UserDetailsServiceImpl;
 import com.myselectshop.service.ProductService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
@@ -30,12 +30,13 @@ public class ProductController {
     }
 
     @GetMapping("/products")
-    public List<ProductResponseDto> getProducts(
+    public Page<ProductResponseDto> getProducts(
             @RequestParam("page") int page,
             @RequestParam("size") int size,
             @RequestParam("sortBy") String sortBy,
             @RequestParam("isAsc") boolean isAsc,
-            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+            @AuthenticationPrincipal UserDetailsImpl userDetails)
+    {
         return productService.getProducts(userDetails.getUser(),
                 page-1, size, sortBy, isAsc);
     }
@@ -45,5 +46,18 @@ public class ProductController {
                           @RequestParam Long folderId,
                           @AuthenticationPrincipal UserDetailsImpl userDetails) {
         productService.addFolder(productId, folderId, userDetails.getUser());
+    }
+
+    @GetMapping("/folders/{folderId}/products")
+    public Page<ProductResponseDto> getProductsInFolder(
+            @PathVariable Long folderId,
+            @RequestParam("page") int page,
+            @RequestParam("size") int size,
+            @RequestParam("sortBy") String sortBy,
+            @RequestParam("isAsc") boolean isAsc,
+            @AuthenticationPrincipal UserDetailsImpl userDetails)
+    {
+        log.info("folderId: "+folderId.toString());
+        return productService.getProductsInFolder(folderId, page-1, size, sortBy, isAsc, userDetails.getUser());
     }
 }
