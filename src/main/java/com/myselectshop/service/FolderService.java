@@ -16,6 +16,11 @@ public class FolderService {
 
     private final FolderRepository folderRepository;
 
+    /**
+     * Folder를 추가하는 메서드
+     * @param folderNames : folder명이 담긴 List
+     * @param user : folder를 추가하고자 하는 사용자
+     */
     public void addFolders(List<String> folderNames, User user) {
         List<Folder> existFolderList = folderRepository.findAllByUserAndNameIn(user, folderNames);
 
@@ -34,11 +39,22 @@ public class FolderService {
         folderRepository.saveAll(folderList);
     }
 
+    /**
+     * 사용자의 Folders를 찾아 반환하는 메서드
+     * @param user : folder를 찾고자 하는 사용자
+     * @return : 찾은 folder list 반환
+     */
     public List<FolderResponseDto> getFolders(User user) {
         List<Folder> folderList = folderRepository.findAllByUser(user);
         return folderList.stream().map(FolderResponseDto::new).toList();
     }
 
+    /**
+     * 폴더명이 존재하는지 확인하는 메서드
+     * @param folderName : folder명
+     * @param existFolderList : 사용자의 folder list (단, 새로 받아온 folder명들과 겹치는 경우)
+     * @return : 폴더명 존재 여부를 return (true/false)
+     */
     private boolean isExistFolderName(String folderName, List<Folder> existFolderList) {
         for (Folder folder : existFolderList) {
             if (folderName.equals(folder.getName())) {

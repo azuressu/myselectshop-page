@@ -9,4 +9,5 @@ import java.util.Optional;
 
 public interface ProductFolderRepository extends JpaRepository<ProductFolder, Long> {
     Optional<ProductFolder> findByProductAndFolder(Product product, Folder folder);
+    // Select * From product_folder Where product_id = ? and folder_id = ? ;
 }

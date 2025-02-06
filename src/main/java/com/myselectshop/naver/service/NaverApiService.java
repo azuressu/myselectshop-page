@@ -32,6 +32,11 @@ public class NaverApiService {
         this.restTemplate = builder.build();
     }
 
+    /**
+     * Naver API를 활용한 아이템을 검색하는 메서드
+     * @param query : 검색어
+     * @return : 검색어에 해당하는 아이템들의 리스트 반환
+     */
     public List<ItemDto> searchItems(String query) {
         // 요청 URL 만들기
         URI uri = UriComponentsBuilder
@@ -57,6 +62,11 @@ public class NaverApiService {
         return fromJSONtoItems(responseEntity.getBody());
     }
 
+    /**
+     * JSON 형대로 가져온 아이템의 내용을 ItemDto 객체로 변환
+     * @param responseEntity : 응답에 담긴 아이템 내용들
+     * @return : ItemDto로 담은 아이템들의 리스트 반환
+     */
     public List<ItemDto> fromJSONtoItems(String responseEntity) {
         JSONObject jsonObject = new JSONObject(responseEntity);
         JSONArray items  = jsonObject.getJSONArray("items");

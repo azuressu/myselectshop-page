@@ -17,6 +17,11 @@ public class NaverApiController {
 
     private final NaverApiService naverApiService;
 
+    /**
+     * Naver API를 활용한 아이템을 검색하는 메서드
+     * @param query : 검색어
+     * @return : 검색어에 해당하는 아이템들의 리스트 반환
+     */
     @GetMapping("/search")
     public List<ItemDto> searchItems(@RequestParam String query)  {
         return naverApiService.searchItems(query);

@@ -20,6 +20,10 @@ public class UserService {
     // ADMIN_TOKEN
     private final String ADMIN_TOKEN = "AAABnvxRVklrnYxKZ0aHgTBcXukeZygoC";
 
+    /**
+     * 회원가입 메서드
+     * @param requestDto : 회원가입을 진행하려는 사용자의 정보
+     */
     public void signup(SignupRequestDto requestDto) {
         String username = requestDto.getUsername();
         String password = passwordEncoder.encode(requestDto.getPassword());

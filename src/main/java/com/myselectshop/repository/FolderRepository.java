@@ -8,7 +8,8 @@ import java.util.List;
 
 public interface FolderRepository extends JpaRepository<Folder, Long> {
     List<Folder> findAllByUserAndNameIn(User user, List<String> folderNames);
-    // Select * From Folder Where user_id = ? and name in (?, ?, ..);
+    // Select * From folder Where user_id = ? and name in (?, ?, ..);
 
     List<Folder> findAllByUser(User user);
+    // Select * From folder Where user_id = ?
 }

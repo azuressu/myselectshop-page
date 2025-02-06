@@ -17,7 +17,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -31,12 +30,24 @@ public class ProductService {
 
     public static final int MIN_MY_PRICE = 100;
 
+    /**
+     * 상품을 생성하는 메서드
+     * @param requestDto : 추가할 상품의 정보
+     * @param user : 현재 로그인한 사용자
+     * @return : 새로 생성한 상품
+     */
     public ProductResponseDto createProduct(ProductRequestDto requestDto, User user) {
         Product product = productRepository.save(new Product(requestDto, user));
 
         return new ProductResponseDto(product);
     }
 
+    /**
+     * 상품의 최저가(사용자 정의)를 수정하는 메서드
+     * @param id : 수정할 상품의 ID
+     * @param requestDto : 수정하려는 최저가
+     * @return : 수정한 상품
+     */
     @Transactional
     public ProductResponseDto updateProduct(Long id, ProductMypriceRequestDto requestDto) {
         int myprice = requestDto.getMyprice();
@@ -54,6 +65,15 @@ public class ProductService {
         return new ProductResponseDto(product);
     }
 
+    /**
+     * 등록한 전체 상품을 반환하는 메서드
+     * @param user : 현재 로그인한 사용자
+     * @param page : 현재 페이지
+     * @param size : 한 페이지에 보여줄 상품의 개수
+     * @param sortBy : 정렬 기준
+     * @param isAsc : 오름차순/내림차순
+     * @return : 해당 page에 존재하는 상품 반환
+     */
     @Transactional(readOnly = true)
     public Page<ProductResponseDto> getProducts(User user, int page, int size, String sortBy, boolean isAsc) {
         Sort.Direction direction = isAsc ? Sort.Direction.ASC : Sort.Direction.DESC;
@@ -74,6 +94,11 @@ public class ProductService {
         return productList.map(ProductResponseDto::new);
     }
 
+    /**
+     * 검색을 통한 상품의 가격을 수정하는 메서드
+     * @param id : 수정할 상품의 ID
+     * @param itemDto : API 조회를 통해 가져온 상품의 정보
+     */
     @Transactional
     public void updateBySearch(Long id, ItemDto itemDto) {
         Product product = productRepository.findById(id).orElseThrow(() -> new NullPointerException("해당 상품은 존재하지 않습니다."));
@@ -81,6 +106,12 @@ public class ProductService {
         product.updateByItemDto(itemDto);
     }
 
+    /**
+     * 폴더를 추가하는 메서드
+     * @param productId : 폴더에 추가할 상품의 ID
+     * @param folderId : 추가할 폴더의 ID
+     * @param user : 현재 로그인한 사용자
+     */
     public void addFolder(Long productId, Long folderId, User user) {
         Product product = productRepository.findById(productId).orElseThrow(
                 () -> new NullPointerException("해당 상품이 존재하지 않습니다"));
@@ -104,6 +135,16 @@ public class ProductService {
         productFolderRepository.save(new ProductFolder(product, folder));
     }
 
+    /**
+     * 해당 폴더에 담긴 상품만 조회하는 메서드
+     * @param folderId : 가져올 폴더의 ID
+     * @param page : 현재 페이지
+     * @param size : 한 페이지에 보여줄 상품의 개수
+     * @param sortBy : 정렬 기준 (ID, 상품명, 최저가)
+     * @param isAsc : 오름차순/내림차순
+     * @param user : 현재 로그인한 사용자
+     * @return : 해당 folder에 존재하는 상품 반환
+     */
     public Page<ProductResponseDto> getProductsInFolder(Long folderId, int page, int size, String sortBy, boolean isAsc, User user) {
         log.info("folderId: "+folderId);
         log.info("page: "+page);

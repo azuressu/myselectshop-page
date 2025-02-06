@@ -17,6 +17,11 @@ public class FolderController {
 
     private final FolderService folderService;
 
+    /**
+     * Folder를 추가하는 메서드
+     * @param folderRequestDto : 생성할 folder명들을 받아옴
+     * @param userDetails : 현재 로그인한 사용자의 정보
+     */
     @PostMapping("/folders")
     public void addFolders(@RequestBody FolderRequestDto folderRequestDto,
                            @AuthenticationPrincipal UserDetailsImpl userDetails) {
@@ -24,6 +29,11 @@ public class FolderController {
         folderService.addFolders(folderNames, userDetails.getUser());
     }
 
+    /**
+     * 사용자의 Folders를 찾아 반환하는 메서드
+     * @param userDetails : 현재 로그인한 사용자의 정보
+     * @return : 로그인한 사용자의 folder들 반환
+     */
     @GetMapping("/folders")
     public List<FolderResponseDto> getFolders(@AuthenticationPrincipal UserDetailsImpl userDetails) {
         return folderService.getFolders(userDetails.getUser());
